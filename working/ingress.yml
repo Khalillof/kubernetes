@@ -1,0 +1,112 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-controller-svc
+  #namespace: ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/server-alias: "test.tuban.me,manage.tuban.me,tuban.me, profdrivers.co.uk, profdrivers.com "
+    #nginx.ingress.kubernetes.io/auth-tls-secret: "default/tls-cert-sec"
+    nginx.ingress.kubernetes.io/enable-access-log: "true"
+    cert-manager.io/issuer: "letsencrypt-production" 
+spec:
+  #ingressClassName: nginx
+  defaultBackend:
+    service:
+      name: hello-svc
+      port:
+        number: 5552
+  tls:
+    - hosts: 
+      - profdrivers.co.uk
+      - prof-drivers.co.uk
+      - profdrivers.com
+      - prof-drivers.com
+      - proffessional-drivers.co.uk
+      - proffessional-drivers.uk
+      - khaliltuban.co.uk
+      - tuban.me
+      - test.tuban.me
+      - manage.tuban.me
+      secretName: tls-cert-sec
+  rules:
+  - host: test.tuban.me
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: mysql-svc
+            port:
+              number: 5554
+  - host: profdrivers.co.uk
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: hello-svc
+            port: 
+              number: 5552
+  - host: prof-drivers.co.uk
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: hello-svc
+            port: 
+              number: 5552
+  - host: profdrivers.com
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: hello-svc
+            port: 
+              number: 5552
+  - host: tuban.me
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: hello-svc
+            port: 
+              number: 5552
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: nginx-ingress-tcp-microk8s-conf
+  namespace: ingress
+  labels:
+    app.kubernetes.io/name: nginx-ingress-microk8s
+    app.kubernetes.io/part-of: nginx-ingress-microk8s
+data:
+  5554: default/mysql-svc:5554
+  5552: default/hello-svc:5552
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: nginx-config
+  namespace: ingress
+  labels:
+    app.kubernetes.io/name: nginx-ingress-microk8s
+    app.kubernetes.io/part-of: nginx-ingress-microk8s
+data:
+  ssl-dh-param: LS0tLS1CRUdJTiBESCBQQVJBTUVURVJTLS0tLS0KTUlJQ0NBS0NBZ0VBdmpEZndsVGJXV2lqdEY2UFlLdStWdXZsdDJKdHk2YnFodlRqSUI2RVlKbGljbG05SXhqVQpEQ3NGRExhamZGa3M4bDVNbDg0U09yM1dOM3hIaUQzYkFPRkFtWTllUmhRL2pBV3BCZEY1QWNjUjdhdEU0K2p3CnlrVjRPUVFjZ251akdZQUFQaUJ5NFBkZDRySlRqRElTY0RTUlpUdHhVTXQzcTlnY3l5SXRiZjNRS2FFT0lWeVYKZTZtbVREcVhqeGR4MGhVaVZvb2NIT0I0N1p2bjZ1RExGMFBFRDFWR1IrbVhPU1pRQXhFZUdPRUcvV295WFY4awpQQ0hRb1dpZVJoNEtadXJFMENwVjBicDNRbHAvcVlIc3lxYm9zNHNrNEFQVis0b1lRZUZGNk1PNTFkd3BiMzF2CkNMa0g2VSt4T0k4emxwOFF0M2kxUlpjb2Uzdi95YTM4OURsSjM0TTViUlorYVNwK3FpS3pSNHhBWTM0azQ2WTUKc1lkdzVjdmZEeEZ2STdPL2Y5NlRtTUFvYko1VkllRDdPN0d2Ym1HQ2FaaXRyMVNDd0ZuNlA5ampJMHlrNHVoQgoxUURmTm56blBlckZjd3NQQVhENzRPMDhCNWd0T29MdjlkelorbmVJSjhvcVpPdWxzWUtBTDVnT0NiVWtjbVBzCjNWdWNZMzdvL2I0UWdjYUJOUkM4SjUyOG83S2RVVGpodDVKU2t2MkdqSzJPSk9kcUJ3aGVDdk1UYlhQbUJEN2QKdTh2S2k5cWkxU1FQOGpCdTZFWlB5bzh2dUxhTUI0TkRyc3kyZW1ERDdKeWQ1ZFE2Nm5nODdXc2N3YXZEUjFWRwpDMHg4V0pmQjlRZGpYcmJDY0R1TzhBZnNXd3loekx6aVZOZGV3ZWlNblh3V2dVRjd5ZDdSeVFNQ0FRST0KLS0tLS1FTkQgREggUEFSQU1FVEVSUy0tLS0tCg==
+  ssl-ciphers: RUNESEUtRUNEU0EtQUVTMTI4LUdDTS1TSEEyNTY6RUNESEUtUlNBLUFFUzEyOC1HQ00tU0hBMjU2OkVDREhFLUVDRFNBLUFFUzI1Ni1HQ00tU0hBMzg0OkVDREhFLVJTQS1BRVMyNTYtR0NNLVNIQTM4NDpFQ0RIRS1FQ0RTQS1DSEFDSEEyMC1QT0xZMTMwNTpFQ0RIRS1SU0EtQ0hBQ0hBMjAtUE9MWTEzMDU6REhFLVJTQS1BRVMxMjgtR0NNLVNIQTI1NjpESEUtUlNBLUFFUzI1Ni1HQ00tU0hBMzg0
+  ssl-protocols: VExTdjEuMiBUTFN2MS4z 
+  ssl-redirect: dHJ1ZQ==
+  server-tokens: ZmFsc2U=
+

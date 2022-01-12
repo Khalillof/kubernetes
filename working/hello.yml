@@ -1,0 +1,44 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-app
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: hello-app
+    spec:
+      containers:
+      - image: nginx:latest   
+        name: hello-container    
+        ports:
+        - containerPort: 80
+          #name: hello
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi    
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-svc
+  namespace: default
+  labels:
+    app: hello-app
+spec:
+  type: ClusterIP
+  selector:
+    app: hello-app
+  ports:
+  - name: hello-app
+    port: 5552
+    targetPort: 80

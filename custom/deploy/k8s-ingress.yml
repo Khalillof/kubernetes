@@ -1,0 +1,76 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-svc
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/server-alias: test.tuban.me
+    cert-manager.io/issuer: "letsencrypt-production" # Replace this with a production issuer once you've tested it
+    #cert-manager.io/issuer: "letsencrypt-staging" # Replace this with a production issuer once you've tested it
+spec:
+  tls:
+    - hosts:
+        - profdrivers.co.uk
+        - prof-drivers.co.uk
+        - profdrivers.com
+        - prof-drivers.com
+        - proffessional-drivers.co.uk
+        - proffessional-drivers.uk
+        - khaliltuban.co.uk
+        - tuban.me
+        - manage.tuban.me
+      secretName: tls-certname
+  rules:
+  - host: profdrivers.co.uk
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: wordpress
+            port: 
+              number: 80
+  - host: prof-drivers.co.uk
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: wordpress
+            port: 
+              number: 80
+  - host: profdrivers.com
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: wordpress
+            port: 
+              number: 80
+  - host: tuban.me
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: wordpress
+            port: 
+              number: 80
+  - host: test.tuban.me
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: mysql
+            port: 
+              number: 3306
+        

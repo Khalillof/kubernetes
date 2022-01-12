@@ -1,0 +1,5 @@
+helm get values ingress-controller --namespace ingress-nginx
+
+kubectl get svc -n ingress-nginx
+kubectl get services -n ingress-nginx
+microk8s.kubectl cluster-info

@@ -1,0 +1,93 @@
+MicroK8s : Enable Storage2020/08/04
+ 	
+To enable MicroK8s built-in Storage, Configure like follows.
+[1]	Enable built-in Storage on primary Node.
+root@dlp:~# microk8s enable storage
+Enabling default storage class
+deployment.apps/hostpath-provisioner created
+storageclass.storage.k8s.io/microk8s-hostpath created
+serviceaccount/microk8s-hostpath created
+clusterrole.rbac.authorization.k8s.io/microk8s-hostpath created
+clusterrolebinding.rbac.authorization.k8s.io/microk8s-hostpath created
+Storage will be available soon
+
+# [hostpath-provisioner] pod starts
+root@dlp:~# microk8s kubectl get pods -A
+NAMESPACE     NAME                                        READY   STATUS    RESTARTS   AGE
+kube-system   coredns-588fd544bf-g9frb                    1/1     Running   2          21h
+kube-system   dashboard-metrics-scraper-59f5574d4-67tjr   1/1     Running   2          21h
+kube-system   hostpath-provisioner-75fdc8fccd-2w95n       1/1     Running   0          13s
+kube-system   kubernetes-dashboard-6d97855997-p5hzj       1/1     Running   2          21h
+kube-system   metrics-server-c65c9d66-zzdl6               1/1     Running   2          21h
+[2]	This is an example to use storage on a Pod to define PVC (Persistent Volume Claim) object.
+root@dlp:~# vi my-pvc.yml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  # any PVC name
+  name: my-pvc
+spec:
+  # access mode:
+  # - ReadWriteMany (RW from multi nodes)
+  # - ReadWriteOnce (RW from a node)
+  # - ReadOnlyMany (R from multi nodes)
+  accessModes:
+    - ReadWriteOnce
+  # specify microk8s-hostpath
+  storageClassName: microk8s-hostpath
+  resources:
+    requests:
+      # storage size to use
+      storage: 1Gi
+
+root@dlp:~# microk8s kubectl create -f my-pvc.yml
+persistentvolumeclaim/my-pvc created
+root@dlp:~# microk8s kubectl get pv
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM            STORAGECLASS        REASON   AGE
+pvc-93bec44d-d46d-477f-b553-2da40f712849   1Gi        RWO            Delete           Bound    default/my-pvc   microk8s-hostpath            50s
+
+root@dlp:~# microk8s kubectl get pvc
+NAME     STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS        AGE
+my-pvc   Bound    pvc-93bec44d-d46d-477f-b553-2da40f712849   1Gi        RWO            microk8s-hostpath   53s
+
+# for example, create a nginx pod
+root@dlp:~# vi nginx-mypv.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-mypv
+  labels:
+    name: nginx-mypv
+spec:
+  containers:
+    - name: nginx-mypv
+      image: fedora/nginx
+      ports:
+        - name: web
+          containerPort: 80
+      volumeMounts:
+        - name: my-persistent-volume
+          mountPath: /usr/share/nginx/html
+  volumes:
+    - name: my-persistent-volume
+      persistentVolumeClaim:
+        # specify PVC name you defined
+        claimName: my-pvc
+
+root@dlp:~# microk8s kubectl create -f nginx-mypv.yml
+pod/nginx-mypv created
+root@dlp:~# microk8s kubectl get pods -o wide
+NAME         READY   STATUS    RESTARTS   AGE   IP           NODE            NOMINATED NODE   READINESS GATES
+nginx-mypv   1/1     Running   0          34m   10.1.21.18   dlp.srv.world   <none>           <none>
+
+# confirm PVC Path
+root@dlp:~# microk8s kubectl describe -n kube-system pod/hostpath-provisioner-75fdc8fccd-2w95n | grep PV_DIR
+      PV_DIR:     /var/snap/microk8s/common/default-storage
+root@dlp:~# microk8s kubectl describe pvc/my-pvc | grep ^Volume:
+Volume:        pvc-93bec44d-d46d-477f-b553-2da40f712849
+
+# create a test page
+root@dlp:~# echo "Hello MicroK8s" > /var/snap/microk8s/common/default-storage/default-my-pvc-pvc-93bec44d-d46d-477f-b553-2da40f712849/index.html
+# access to verify
+root@dlp:~# curl 10.1.21.18
+Hello MicroK8s
